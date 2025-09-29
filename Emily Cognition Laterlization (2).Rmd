@@ -1,0 +1,204 @@
+---
+title: "Emily MMB"
+author: "Jenni"
+date: "2025-07-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+
+library(ggplot2)
+library(lme4)
+#library(MuMIn)
+library(vegan)
+library(emmeans)
+library(lmerTest)
+library(tibble)
+library(plyr)
+library(dplyr)
+library(readr)
+library(janitor)
+library(pbkrtest) 
+library(tidyr)
+#library(ggpubr)
+library(ggthemes)
+library(stringr)
+library(car)
+library(glmmTMB) 
+library(nlme)
+library(moments)
+library(forcats)
+
+```
+
+```{r}
+setwd("C:/Users/jc130714/OneDrive - James Cook University/Desktop")
+getwd()
+```
+
+```{r}
+
+Lat = read.csv('Emily Cognition Laterlization.csv', strip.white=TRUE)
+head(Lat)
+
+Lat$Temperature = factor (Lat$Temperature)
+Lat$Clutch = factor (Lat$Clutch)
+```
+
+
+```{r}
+ggplot(Lat, aes(x=Clutch, y=Lat.Index, colour=Treatment, fill = Temperature))+ geom_boxplot() +  theme_classic()
+ggplot(Lat, aes(x=Clutch, y=Abs.Lat.Index, colour=Treatment, fill = Temperature))+ geom_boxplot() +  theme_classic()
+```
+
+
+```{r}
+ggplot(Lat, aes(x=Temperature, y=Lat.Index, colour=Treatment, fill = Treatment))+ geom_violin() +  theme_classic()
+ggplot(Lat, aes(x=Temperature, y=Abs.Lat.Index, colour=Treatment, fill = Treatment))+ geom_violin(trim = FALSE, bw = 10) +  theme_classic()
+
+```
+
+```{r}
+library(ggdist)
+ggplot(Lat, aes(x = Temperature, y = Lat.Index, fill = Treatment)) + stat_halfeye( .width = c(0.66, 0.89, 0.95, 0.99),  slab_alpha = 0.6,  point_interval = "mean_qi", position = position_dodge(width = 1)) + labs(x = "Temperature (°C)", y = "Laterilization") +  theme_classic()
+
+ggplot(Lat, aes(x = Temperature, y = Abs.Lat.Index, fill = Treatment)) + stat_halfeye( .width = c(0.66, 0.89, 0.95, 0.99),  slab_alpha = 0.6,  point_interval = "mean_qi", position = position_dodge(width = 1), adjust = 3 ) + labs(x = "Temperature (°C)", y = "Experimental group") +  theme_classic()
+```
+
+
+```{r}
+ggplot(Lat, aes(x = Lat.Index, colour = Treatment, fill = Treatment)) + facet_wrap(~Temperature)+
+  geom_density(alpha = 0.4) +
+  theme_classic()
+```
+```{r}
+ggplot(Lat, aes(x = Lat.Index, colour = Temperature, fill = Temperature)) + facet_wrap(~Treatment)+
+  geom_density(alpha = 0.4) +
+  theme_classic()
+```
+
+```{r}
+ggplot(Lat, aes(x = Abs.Lat.Index, colour = Treatment, fill = Treatment)) + facet_wrap(~Temperature)+
+  geom_density(alpha = 0.4, adjust = 2) +
+  theme_classic()
+```
+```{r}
+ggplot(Lat, aes(x = Abs.Lat.Index, colour = Temperature, fill = Temperature)) + facet_wrap(~Treatment)+
+  geom_density(alpha = 0.4, adjust = 2) +
+  theme_classic()
+```
+
+
+```{r}
+y <- cbind(Lat$L, Lat$R)
+
+glm_Lat <- glm(y~ Treatment * Temperature , family = "binomial", data = Lat)
+
+glmer_Lat <- glmer(y~ Treatment * Temperature + (1|Tank..) , family = "binomial", data = Lat) 
+
+glmer_Lat2 <- glmer(y~ Treatment * Temperature + (1|Clutch/Tank..), family = "binomial", data = Lat) 
+
+```
+
+
+```{r}
+glm_Lat <- glm(y~ Treatment * Temperature , family = "binomial", data = Lat)
+summary(glm_Lat)
+Anova(glm_Lat)
+```
+
+
+```{r}
+
+glmer_Lat <- glmer(y~ Treatment * Temperature + (1|Tank..) , family = "binomial", data = Lat) 
+glmer_Lat3 <- glmer(y~ Treatment * Temperature + (1|Tank..) , family = binomial(link="probit"), data = Lat) 
+glmer_Lat4 <- glmer(y~ Treatment * Temperature + (1|Tank..) ,family = binomial(link="cloglog"), data = Lat) 
+
+AIC(glmer_Lat, glmer_Lat3, glmer_Lat4)
+
+```
+```{r}
+summary(glmer_Lat3)
+anova(glmer_Lat3)
+Anova(glmer_Lat3)
+```
+
+```{r}
+summary(glmer_Lat4)
+anova(glmer_Lat4)
+Anova(glmer_Lat4)
+```
+
+
+```{r}
+summary(glmer_Lat)
+anova(glmer_Lat)
+Anova(glmer_Lat)
+```
+
+```{r}
+plot(glmer_Lat)
+library(DHARMa)
+plot(simulateResiduals(glmer_Lat))
+```
+
+```{r}
+plot(glmer_Lat3)
+library(DHARMa)
+plot(simulateResiduals(glmer_Lat3))
+```
+
+```{r}
+plot(glmer_Lat4)
+library(DHARMa)
+plot(simulateResiduals(glmer_Lat4))
+```
+
+```{r}
+emmeans(glmer_Lat, pairwise ~ Temperature, adjust="tukey") 
+plot(emmeans(glmer_Lat, pairwise ~ Temperature, adjust="tukey"))
+```
+
+
+```{r}
+EMM_Lat = (emmeans(glmer_Lat, ~ Treatment * Temperature , type = "response") %>% as.data.frame)
+EMM_Lat
+
+EMM_Lat$Treatment <- factor(
+ EMM_Lat$Treatment,
+  levels = c("CONTROL", "MHW", "1.5") )
+
+ggplot(EMM_Lat, aes (x = Treatment,  y=prob, colour=Temperature)) + geom_pointrange(aes (ymin = prob-SE, ymax = prob+SE), position=position_dodge(width=1), size=1) +  theme_classic()
+
+```
+
+
+```{r}
+lm_AbsLat = lm(Abs.Lat.Index ~ Treatment * Temperature , data = Lat)
+lmer_AbsLat = lmer(Abs.Lat.Index ~Treatment * Temperature + (1|Tank..), data = Lat)
+lmer_AbsLat2 = lmer(Abs.Lat.Index ~ Treatment * Temperature + (1|Clutch/Tank..), data = Lat)
+
+AIC(lm_AbsLat, lmer_AbsLat, lmer_AbsLat2)
+```
+
+```{r}
+summary(lmer_AbsLat)
+Anova(lmer_AbsLat)
+```
+
+```{r}
+summary(lm_AbsLat)
+Anova(lm_AbsLat)
+```
+
+
+
+
+
+
