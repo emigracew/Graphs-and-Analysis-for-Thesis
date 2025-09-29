@@ -1,0 +1,48 @@
+---
+title: "Emerge/DontEmerge"
+output: html_document
+date: "2025-09-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(viridis)
+library(grid)
+
+
+dat <- read_csv("C:\\Users\\emigr\\OneDrive\\Documents\\JCU\\Thesis\\Pre-Completion\\PreCompletion Graphs\\Cognition-Behavior Testing(Master Data Sheet).csv")
+
+
+df <- dat[!is.na(dat$Emergence),]
+```
+
+# Emerge/Dont Emerge
+
+
+This markdown is for the graphs and analysis for the emerge vs don't emerge for the boldness testing.
+
+
+```{r}
+g1 <- ggplot(df,aes(x = interaction(Treatment,Temperature),fill = Emergence)) + 
+    geom_bar(position = "fill",) +
+  coord_cartesian(ylim = c(0, 1)) +
+  annotate("text", x = 1:6, y = -0.1,
+           label = rep(c("+1.5", "Control", "MHW"), 2)) +
+  annotate("text" , c(1.5, 3.5), y = - .2, label = c("28.5", "31.5")) +
+  theme_classic() +
+  theme(plot.margin = unit(c(1, 1, 4, 1), "lines"),
+       axis.title.x = element_blank(),
+       axis.text.x = element_blank())
+
+
+#Get rid of clipping x axis
+g2 <- ggplot_gtable(ggplot_build(g1))
+g2$layout$clip[g2$layout$name == "panel"] <- "off"
+grid.draw(g2)
+  
+g2
+```
+
+
+

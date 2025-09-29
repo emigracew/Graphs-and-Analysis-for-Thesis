@@ -1,0 +1,56 @@
+---
+title: "Scoring Graphs and Analysis"
+output: html_document
+date: "2025-09-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(viridis)
+library(grid)
+#install.packages('ggplotify')
+library(ggplotify)
+
+
+dat <- read_csv("C:\\Users\\emigr\\OneDrive\\Documents\\JCU\\Thesis\\Pre-Completion\\PreCompletion Graphs\\Cognition-Behavior Testing(Master Data Sheet).csv")
+
+
+df <- dat[!is.na(dat$Boldness),]
+class(df$Temperature)
+df$Temperature <- as.character(df$Temperature)
+```
+
+# Scoring Graphs and Analysis
+
+This metric will have a violin plot.
+
+
+```{r}
+p <- ggplot(df, aes(x=interaction(Treatment,Temperature), y=Boldness, fill=Treatment)) + # fill=name allow to automatically dedicate a color for each group
+  geom_violin() +
+   coord_cartesian(ylim = c(1, 7)) +
+  annotate("text", x = 1:6, y = 0,
+           label = rep(c("+1.5", "Control", "MHW"), 2)) +
+  annotate("text" , c(2, 5), y = - .5, label = c("28.5", "31.5")) +
+  theme_classic() +
+  theme(plot.margin = unit(c(1, 1, 4, 1), "lines"),
+       axis.title.x = element_blank(),
+       axis.text.x = element_blank()) +
+  scale_y_continuous(breaks = seq(1, 7, by = 1))
+
+p
+
+
+#Get rid of clipping x axis
+p2 <- ggplot_gtable(ggplot_build(p))
+p2$layout$clip[p2$layout$name == "panel"] <- "off"
+grid.draw(p2)
+  
+p2
+
+as.ggplot(p2)
+
+```
+
